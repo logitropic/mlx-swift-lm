@@ -205,52 +205,62 @@ public class LLMRegistry: AbstractModelRegistry, @unchecked Sendable {
 
     static public let qwen205b4bit = ModelConfiguration(
         id: "mlx-community/Qwen1.5-0.5B-Chat-4bit",
-        defaultPrompt: "why is the sky blue?"
+        defaultPrompt: "why is the sky blue?",
+        extraEOSTokens: ["<|im_end|>"]
     )
 
     static public let qwen2_5_7b = ModelConfiguration(
         id: "mlx-community/Qwen2.5-7B-Instruct-4bit",
-        defaultPrompt: "Why is the sky blue?"
+        defaultPrompt: "Why is the sky blue?",
+        extraEOSTokens: ["<|im_end|>"]
     )
 
     static public let qwen2_5_1_5b = ModelConfiguration(
         id: "mlx-community/Qwen2.5-1.5B-Instruct-4bit",
-        defaultPrompt: "Why is the sky blue?"
+        defaultPrompt: "Why is the sky blue?",
+        extraEOSTokens: ["<|im_end|>"]
     )
 
     static public let qwen3_0_6b_4bit = ModelConfiguration(
         id: "mlx-community/Qwen3-0.6B-4bit",
-        defaultPrompt: "Why is the sky blue?"
+        defaultPrompt: "Why is the sky blue?",
+        extraEOSTokens: ["<|im_end|>"]
     )
 
     static public let qwen3_1_7b_4bit = ModelConfiguration(
         id: "mlx-community/Qwen3-1.7B-4bit",
-        defaultPrompt: "Why is the sky blue?"
+        defaultPrompt: "Why is the sky blue?",
+        extraEOSTokens: ["<|im_end|>"]
     )
 
     static public let qwen3_4b_4bit = ModelConfiguration(
         id: "mlx-community/Qwen3-4B-4bit",
-        defaultPrompt: "Why is the sky blue?"
+        defaultPrompt: "Why is the sky blue?",
+        extraEOSTokens: ["<|im_end|>"]
     )
 
     static public let qwen3_8b_4bit = ModelConfiguration(
         id: "mlx-community/Qwen3-8B-4bit",
-        defaultPrompt: "Why is the sky blue?"
+        defaultPrompt: "Why is the sky blue?",
+        extraEOSTokens: ["<|im_end|>"]
     )
 
     static public let qwen3MoE_30b_a3b_4bit = ModelConfiguration(
         id: "mlx-community/Qwen3-30B-A3B-4bit",
-        defaultPrompt: "Why is the sky blue?"
+        defaultPrompt: "Why is the sky blue?",
+        extraEOSTokens: ["<|im_end|>"]
     )
 
     static public let qwen3_5_2b_4bit = ModelConfiguration(
         id: "mlx-community/Qwen3.5-2B-4bit",
-        defaultPrompt: "Why is the sky blue?"
+        defaultPrompt: "Why is the sky blue?",
+        extraEOSTokens: ["<|im_end|>"]
     )
 
     static public let qwen3_6_27b_4bit = ModelConfiguration(
         id: "mlx-community/Qwen3.6-27B-4bit",
-        defaultPrompt: "Why is the sky blue?"
+        defaultPrompt: "Why is the sky blue?",
+        extraEOSTokens: ["<|im_end|>"]
     )
 
     static public let openelm270m4bit = ModelConfiguration(
@@ -261,22 +271,26 @@ public class LLMRegistry: AbstractModelRegistry, @unchecked Sendable {
 
     static public let llama3_1_8B_4bit = ModelConfiguration(
         id: "mlx-community/Meta-Llama-3.1-8B-Instruct-4bit",
-        defaultPrompt: "What is the difference between a fruit and a vegetable?"
+        defaultPrompt: "What is the difference between a fruit and a vegetable?",
+        extraEOSTokens: ["<|eot_id|>"]
     )
 
     static public let llama3_8B_4bit = ModelConfiguration(
         id: "mlx-community/Meta-Llama-3-8B-Instruct-4bit",
-        defaultPrompt: "What is the difference between a fruit and a vegetable?"
+        defaultPrompt: "What is the difference between a fruit and a vegetable?",
+        extraEOSTokens: ["<|eot_id|>"]
     )
 
     static public let llama3_2_1B_4bit = ModelConfiguration(
         id: "mlx-community/Llama-3.2-1B-Instruct-4bit",
-        defaultPrompt: "What is the difference between a fruit and a vegetable?"
+        defaultPrompt: "What is the difference between a fruit and a vegetable?",
+        extraEOSTokens: ["<|eot_id|>"]
     )
 
     static public let llama3_2_3B_4bit = ModelConfiguration(
         id: "mlx-community/Llama-3.2-3B-Instruct-4bit",
-        defaultPrompt: "What is the difference between a fruit and a vegetable?"
+        defaultPrompt: "What is the difference between a fruit and a vegetable?",
+        extraEOSTokens: ["<|eot_id|>"]
     )
 
     static public let deepseek_r1_4bit = ModelConfiguration(
@@ -553,17 +567,20 @@ public final class LLMModelFactory: GenericModelFactory {
         // Load EOS token IDs from config.json, with optional override from generation_config.json
         var eosTokenIds = Set(baseConfig.eosTokenIds?.values ?? [])
         let generationConfigURL = modelDirectory.appending(component: "generation_config.json")
-        if let generationData = try? Data(contentsOf: generationConfigURL),
-            let generationConfig = try? JSONDecoder.json5().decode(
-                GenerationConfigFile.self, from: generationData),
-            let genEosIds = generationConfig.eosTokenIds?.values
-        {
+        let generationConfig: GenerationConfigFile? =
+            if let generationData = try? Data(contentsOf: generationConfigURL) {
+                try? JSONDecoder.json5().decode(GenerationConfigFile.self, from: generationData)
+            } else {
+                nil
+            }
+        if let genEosIds = generationConfig?.eosTokenIds?.values {
             eosTokenIds = Set(genEosIds)  // Override per Python mlx-lm behavior
         }
 
         // Build a ModelConfiguration with loaded EOS token IDs and tool call format
         var mutableConfiguration = configuration
         mutableConfiguration.eosTokenIds = eosTokenIds
+        mutableConfiguration.stopStrings.formUnion(generationConfig?.stopStrings ?? [])
         if mutableConfiguration.toolCallFormat == nil {
             mutableConfiguration.toolCallFormat = ToolCallFormat.infer(
                 from: baseConfig.modelType, configData: configData)
@@ -596,6 +613,7 @@ public final class LLMModelFactory: GenericModelFactory {
             tokenizerSource: tokenizerSource,
             defaultPrompt: configuration.defaultPrompt,
             extraEOSTokens: mutableConfiguration.extraEOSTokens,
+            stopStrings: mutableConfiguration.stopStrings,
             eosTokenIds: mutableConfiguration.eosTokenIds,
             toolCallFormat: mutableConfiguration.toolCallFormat)
 
