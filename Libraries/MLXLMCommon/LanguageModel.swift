@@ -116,13 +116,24 @@ public struct LMInput {
         public let positionIds: MLXArray?
         /// Time, height, and width of the images
         public let frames: [THW]?
+        /// Optional local crop pixels for models that require separate global/local image views.
+        public let cropPixels: MLXArray?
+        /// Optional mask marking token positions that should receive image embeddings.
+        public let sequenceMask: MLXArray?
+        /// Optional per-image spatial crop metadata, typically [widthCropCount, heightCropCount].
+        public let spatialCrops: MLXArray?
 
         public init(
-            pixels: MLXArray, positionIds: MLXArray? = nil, frames: [THW]? = nil
+            pixels: MLXArray, positionIds: MLXArray? = nil, frames: [THW]? = nil,
+            cropPixels: MLXArray? = nil, sequenceMask: MLXArray? = nil,
+            spatialCrops: MLXArray? = nil
         ) {
             self.pixels = pixels
             self.positionIds = positionIds
             self.frames = frames
+            self.cropPixels = cropPixels
+            self.sequenceMask = sequenceMask
+            self.spatialCrops = spatialCrops
         }
     }
 

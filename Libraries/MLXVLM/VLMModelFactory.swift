@@ -105,6 +105,7 @@ public enum VLMTypeRegistry {
         "lfm2_vl": create(LFM2VLConfiguration.self, LFM2VL.init),
         "lfm2-vl": create(LFM2VLConfiguration.self, LFM2VL.init),
         "glm_ocr": create(GlmOcrConfiguration.self, GlmOcr.init),
+        "deepseekocr": create(DeepseekOCRConfiguration.self, DeepseekOCR.init),
     ])
 }
 
@@ -140,6 +141,8 @@ public enum VLMProcessorTypeRegistry {
             LFM2VLProcessorConfiguration.self, LFM2VLProcessor.init),
         "Glm46VProcessor": create(
             GlmOcrProcessorConfiguration.self, GlmOcrProcessor.init),
+        "DeepseekOCRProcessor": create(
+            DeepseekOCRProcessorConfiguration.self, DeepseekOCRProcessor.init),
     ])
 }
 
@@ -268,6 +271,11 @@ public class VLMRegistry: AbstractModelRegistry, @unchecked Sendable {
         extraEOSTokens: ["<|im_end|>"]
     )
 
+    static public let deepseekOCRUnlimitedMXFP8 = ModelConfiguration(
+        id: "sahilchachra/unlimited-ocr-mxfp8-mlx",
+        defaultPrompt: "<|grounding|>OCR this image."
+    )
+
     static public func all() -> [ModelConfiguration] {
         [
             paligemma3bMix448_8bit,
@@ -287,6 +295,7 @@ public class VLMRegistry: AbstractModelRegistry, @unchecked Sendable {
             fastvlm,
             qwen3_5_27B_4bit,
             qwen3_5_35B_A3B_4bit,
+            deepseekOCRUnlimitedMXFP8,
         ]
     }
 
